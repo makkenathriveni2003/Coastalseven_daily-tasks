@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Upload + WebSocket</title>
+    <style>
+        :root {
+            --bg: #f4f7fb;
+            --panel: #ffffff;
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --border: #dfe7f3;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --bubble-user: #dbeafe;
+            --bubble-server: #f3f4f6;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, #eef5ff, #f8fafc);
+            font-family: Arial, sans-serif;
+            color: var(--text);
+            padding: 30px 20px;
+        }
+
+        .container {
+            max-width: 780px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+            margin-bottom: 22px;
+        }
+
+        h2 {
+            margin: 0 0 16px;
+            font-size: 1.5rem;
+        }
+
+        input[type="file"], input[type="text"] {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: #fff;
+            margin-top: 10px;
+        }
+
+        button {
+            display: inline-block;
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 10px;
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: 0.2s ease;
+        }
+
+        button:hover {
+            background: var(--primary-dark);
+        }
+
+        #status, #wsStatus {
+            margin-top: 14px;
+            font-size: 0.96rem;
+            color: var(--muted);
+        }
+
+        .success { color: var(--success); }
+        .error { color: var(--danger); }
+
+        .preview {
+            margin-top: 18px;
+            max-width: 220px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: none;
+        }
+
+        .chat-box {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            min-height: 200px;
+            padding: 12px;
+            max-height: 260px;
+            overflow-y: auto;
+            margin-top: 12px;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .bubble {
+            max-width: 75%;
+            padding: 10px 12px;
+            border-radius: 12px;
+            line-height: 1.4;
+            font-size: 0.95rem;
+        }
+
+        .message.user .bubble {
+            background: var(--bubble-user);
+        }
+
+        .message.server .bubble {
+            background: var(--bubble-server);
+        }
+
+        .meta {
+            font-size: 0.72rem;
+            color: var(--muted);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .chat-image {
+            max-width: 180px;
+            border-radius: 10px;
+            display: block;
+            margin-top: 8px;
+            border: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h2>Upload Image</h2>
+            <form id="uploadForm">
+                <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp" />
+                <button type="submit">Upload</button>
+            </form>
+            <div id="status"></div>
+            <img id="uploadedImage" class="preview" alt="Uploaded preview" />
+        </div>
+
+        <div class="card">
+            <h2>WebSocket Chat</h2>
+            <div style="margin-bottom: 10px;">
+                <input type="text" id="usernameInput" placeholder="Your name" value="Guest" />
+            </div>
+            <div id="wsStatus">Disconnected</div>
+            <div id="messages" class="chat-box"></div>
+            <input type="text" id="messageInput" placeholder="Type a message..." />
+            <button id="sendBtn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const statusDiv = document.getElementById('status');
+        const uploadedImage = document.getElementById('uploadedImage');
+
+        uploadForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const file = fileInput.files[0];
+
+            if (!file) {
+                statusDiv.textContent = 'Please select a file first.';
+                statusDiv.className = 'error';
+                return;
+            }
+
+            const allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                statusDiv.textContent = 'Only PNG, JPG/JPEG, and WEBP images are allowed.';
+                statusDiv.className = 'error';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            statusDiv.textContent = 'Uploading...';
+            statusDiv.className = '';
+
+            try {
+                const response = await fetch('/upload/', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Upload failed');
+                }
+
+                statusDiv.textContent = 'Upload successful: ' + data.filename;
+                statusDiv.className = 'success';
+                uploadedImage.src = data.url;
+                uploadedImage.style.display = 'block';
+                addChatImageMessage(data.url);
+            } catch (error) {
+                statusDiv.textContent = 'Error: ' + error.message;
+                statusDiv.className = 'error';
+            }
+        });
+
+        const wsStatus = document.getElementById('wsStatus');
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const usernameInput = document.getElementById('usernameInput');
+
+        const websocketProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const socket = new WebSocket(
+            `${websocketProtocol}//${window.location.host}/ws/`
+        );
+
+        function timestamp() {
+            return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function addMessage(sender, text, imageUrl = null) {
+            const wrapper = document.createElement('div');
+            wrapper.className = `message ${sender}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+
+            const meta = document.createElement('span');
+            meta.className = 'meta';
+            meta.textContent = `${sender === 'user' ? 'You' : 'Server'} • ${timestamp()}`;
+
+            const content = document.createElement('div');
+            content.textContent = text;
+
+            bubble.appendChild(meta);
+            bubble.appendChild(content);
+
+            if (imageUrl) {
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.className = 'chat-image';
+                bubble.appendChild(img);
+            }
+
+            wrapper.appendChild(bubble);
+            messagesDiv.appendChild(wrapper);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function addChatImageMessage(imageUrl) {
+            addMessage('user', 'Uploaded image', imageUrl);
+        }
+
+        socket.addEventListener('open', () => {
+            wsStatus.textContent = 'Connected';
+            wsStatus.className = 'success';
+            addMessage('server', 'Connected to chat server');
+        });
+
+        socket.addEventListener('message', (event) => {
+            addMessage('server', event.data);
+        });
+
+        socket.addEventListener('close', () => {
+            wsStatus.textContent = 'Disconnected';
+            wsStatus.className = 'error';
+        });
+
+        socket.addEventListener('error', () => {
+            wsStatus.textContent = 'Connection error';
+            wsStatus.className = 'error';
+        });
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            if (socket.readyState !== WebSocket.OPEN) {
+                wsStatus.textContent = 'Not connected. Check the server and reload.';
+                wsStatus.className = 'error';
+                return;
+            }
+
+            const username = usernameInput.value.trim() || 'Guest';
+            const payload = `${username}: ${message}`;
+            socket.send(payload);
+            addMessage('user', payload);
+            messageInput.value = '';
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
+
+</html>

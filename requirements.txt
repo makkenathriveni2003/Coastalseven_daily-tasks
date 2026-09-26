@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+python-multipart
+Pillow
+pytest
+pytest-cov
+pytest-asyncio
+black
+flake8
+mypy
+httpx2
