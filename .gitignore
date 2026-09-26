@@ -1,5 +1,16 @@
+<<<<<<< HEAD
 .env
 .venv/
 __pycache__/
 *.pyc
 *.db
+=======
+.venv/
+__pycache__/
+*.pyc
+day7.db
+.env
+.pytest_cache/
+.idea/
+.vscode/
+>>>>>>> 55a406acec1142d596fe74e5b8ced1ebdcea2524
