@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+pydantic
+pydantic-settings
+email-validator
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt<4.1
+python-multipart
+redis
+celery
+Pillow
+pytest
+pytest-asyncio
+httpx

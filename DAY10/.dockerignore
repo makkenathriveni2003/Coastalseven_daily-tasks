@@ -1,0 +1,9 @@
+.venv
+__pycache__
+.pytest_cache
+.git
+.gitignore
+*.pyc
+.env
+day10_ecommerce.db
+uploads/*

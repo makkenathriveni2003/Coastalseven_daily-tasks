@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Day 10 Store</title>
+    <link rel="stylesheet" href="/store/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="masthead">
+        <div>
+          <p class="eyebrow">DAY 10 / SHOP</p>
+          <h1>Product shelf</h1>
+          <p class="intro">Uploaded product photography, straight from your API.</p>
+        </div>
+        <button id="refresh" class="refresh" type="button">Refresh products</button>
+      </header>
+
+      <section class="account-bar" aria-label="Account and cart">
+        <form id="login-form" class="login-form">
+          <input id="email" type="email" placeholder="Email" autocomplete="email" required />
+          <input id="password" type="password" placeholder="Password" autocomplete="current-password" required />
+          <button type="submit">Login</button>
+        </form>
+        <form id="register-form" class="login-form register-form">
+          <input id="register-name" type="text" placeholder="Name" autocomplete="name" required />
+          <input id="register-email" type="email" placeholder="New email" autocomplete="email" required />
+          <input id="register-password" type="password" placeholder="New password" autocomplete="new-password" required />
+          <button type="submit">Register</button>
+        </form>
+        <button id="logout" class="logout" type="button" hidden>Logout</button>
+        <span id="account-status" class="account-status">Login to add products to your cart.</span>
+        <span id="cart-count" class="cart-count">Cart: 0</span>
+        <button id="checkout" class="checkout" type="button">Place order</button>
+      </section>
+
+      <section class="cart-section" aria-labelledby="cart-title">
+        <div class="section-heading">
+          <h2 id="cart-title">Cart</h2>
+          <span id="cart-status" class="account-status">Login to view your cart.</span>
+        </div>
+        <div id="cart-items" class="cart-items"></div>
+      </section>
+
+      <p id="status" class="status" role="status">Loading products...</p>
+      <section id="products" class="product-grid" aria-live="polite"></section>
+
+      <section class="orders-section" aria-labelledby="orders-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">ACCOUNT</p>
+            <h2 id="orders-title">Order history</h2>
+          </div>
+          <span id="orders-status" class="account-status">Login to view orders.</span>
+        </div>
+        <div id="orders" class="orders-list" aria-live="polite"></div>
+      </section>
+    </main>
+    <script src="/store/app.js"></script>
+  </body>
+</html>
