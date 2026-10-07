@@ -1,0 +1,5 @@
+.env
+store.db
+store.db-*
+ecommerce.db
+ecommerce.db-*
