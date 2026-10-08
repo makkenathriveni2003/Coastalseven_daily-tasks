@@ -1,0 +1,12 @@
+﻿fastapi
+uvicorn[standard]
+python-dotenv
+psycopg[binary]
+celery
+redis
+reportlab
+alembic
+sqlalchemy
+pytest
+pydantic
+python-multipart
