@@ -10,8 +10,13 @@ import { useWebSocket } from "./hooks/useWebSocket"
 import { WS_URL } from "./services/apiClient"
 import NotificationsPanel from "./components/NotificationsPanel"
 import LiveChatWidget from "./components/LiveChatWidget"
+import { UserProfileModal } from "./components/UserProfileModal"
+import { MobileBottomNav } from "./components/MobileBottomNav"
+import { useFavoritesStore } from "./store/favoritesStore"
+import { GenZLogo } from "./components/GenZLogo"
 
 const Cart = lazy(() => import("./pages/Cart"))
+const Favorites = lazy(() => import("./pages/Favorites"))
 const ManageProducts = lazy(() => import("./pages/ManageProducts"))
 const ProductDetails = lazy(() => import("./pages/ProductDetails"))
 const Checkout = lazy(() => import("./pages/Checkout"))
@@ -19,6 +24,7 @@ const OrderHistory = lazy(() => import("./pages/OrderHistory"))
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"))
 const Login = lazy(() => import("./pages/Login"))
 const BackgroundJobs = lazy(() => import("./pages/BackgroundJobs").then(m => ({ default: m.BackgroundJobs })))
+const AiAssistant = lazy(() => import("./pages/AiAssistant").then(m => ({ default: m.AiAssistant })))
 
 type Theme = "light" | "dark"
 
@@ -28,9 +34,11 @@ function getInitialTheme(): Theme {
 
 export default function App() {
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const cartCount = useCartStore((state) =>
     state.cart.reduce((total, item) => total + item.quantity, 0),
   )
+  const favoritesCount = useFavoritesStore((state) => state.favorites.length)
   const user = useAuthStore((state) => state.user)
   const token = useAuthStore((state) => state.token)
   const logout = useAuthStore((state) => state.logout)
@@ -95,21 +103,32 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {/* Top Elegant Announcement Bar */}
+      <div className="sz-top-announcement-bar">
+        <span>✨ <strong>GENZ ZONE FESTIVAL SALE:</strong> Extra 15% Off with Code <code>GENZ15</code> &bull; Free Express Delivery on ₹499+ &bull; 100% Genuine Assured</span>
+      </div>
+
       <header className="app-header">
-        <NavLink className="brand" to="/" aria-label="ShopZone">
-          <span className="brand-mark" aria-hidden="true">S</span>
-          <span>ShopZone<span className="brand-dot">.</span></span>
+        <NavLink className="brand" to="/">
+          <GenZLogo size={34} />
+          <div className="brand-text-block">
+            <span className="brand-title">
+              GenZ Zone<span className="brand-dot">✦</span>
+            </span>
+            <span className="brand-subtitle">TRENDING &bull; STREETWEAR &bull; GANZEE</span>
+          </div>
         </NavLink>
 
         <nav className="main-nav" aria-label="Main navigation">
           <NavLink to="/" end>Shop</NavLink>
+          <NavLink to="/favorites" className="favorites-link">
+            Favorites <span className="favorites-count" aria-label={`${favoritesCount} items`}>♥ {favoritesCount}</span>
+          </NavLink>
           <NavLink to="/cart" className="cart-link">
             Bag <span className="cart-count" aria-label={`${cartCount} ${cartCount === 1 ? "item" : "items"}`}>{cartCount}</span>
           </NavLink>
-          <NavLink to="/tasks">Background Jobs</NavLink>
-          {user?.role === "admin" && <NavLink to="/manage">Add products</NavLink>}
+          <NavLink to="/ai-assistant">AI Assistant</NavLink>
           {user && <NavLink to="/orders">Orders</NavLink>}
-          {user?.role === "admin" && <NavLink to="/admin">Admin</NavLink>}
         </nav>
 
         <div className="account-area">
@@ -163,7 +182,8 @@ export default function App() {
           {user ? (
             <>
               {user.role === "admin" && (
-                <span
+                <NavLink
+                  to="/admin"
                   className="admin-badge"
                   style={{
                     fontSize: "0.75rem",
@@ -171,19 +191,49 @@ export default function App() {
                     textTransform: "uppercase",
                     padding: "0.2rem 0.55rem",
                     borderRadius: "999px",
-                    background: "var(--accent, #dc2626)",
+                    background: "#059669",
                     color: "#fff",
                     letterSpacing: "0.04em",
+                    textDecoration: "none",
                   }}
+                  title="Open Admin Dashboard"
                 >
                   Admin
-                </span>
+                </NavLink>
               )}
-              <span className="account-greeting">Hi, {user.name}</span>
+              <button
+                type="button"
+                className="sz-user-profile-chip-btn"
+                onClick={() => setIsProfileModalOpen(true)}
+                title="View Profile & Account"
+                aria-label="Open profile modal"
+              >
+                <img
+                  src={
+                    user.avatar ||
+                    (user.role === "admin"
+                      ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"
+                      : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100")
+                  }
+                  alt={user.name}
+                  className="sz-user-avatar-badge"
+                />
+                <span className="account-greeting">Hi, {user.name}</span>
+              </button>
               <button className="text-button" onClick={logout}>Sign out</button>
             </>
           ) : (
             <div className="auth-links" style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
+              <button
+                type="button"
+                className="sz-user-profile-badge"
+                onClick={() => setIsProfileModalOpen(true)}
+                title="Profile & Quick Switch"
+                aria-label="User Profile"
+              >
+                <span style={{ fontSize: "1.1rem" }}>👤</span>
+                <span>Profile</span>
+              </button>
               <NavLink className="text-button" to="/manage">Sign in</NavLink>
               <NavLink className="text-button admin-login-btn" to="/admin" style={{ fontWeight: 600 }}>Admin login</NavLink>
             </div>
@@ -195,6 +245,8 @@ export default function App() {
         <Suspense fallback={<p className="status-message">Opening your shop...</p>}>
           <Routes>
             <Route path="/" element={<Products />} />
+            <Route path="/favorites" element={<Favorites />} />
+            <Route path="/wishlist" element={<Favorites />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/orders" element={<OrderHistory />} />
@@ -204,6 +256,8 @@ export default function App() {
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/tasks" element={<BackgroundJobs />} />
             <Route path="/jobs" element={<BackgroundJobs />} />
+            <Route path="/ai-assistant" element={<AiAssistant />} />
+            <Route path="/assistant" element={<AiAssistant />} />
             <Route path="*" element={<Products />} />
           </Routes>
         </Suspense>
@@ -212,9 +266,25 @@ export default function App() {
       {/* Floating Real-Time Support Chat Widget */}
       <LiveChatWidget wsStatus={wsStatus} sendMessage={sendWsMessage} />
 
+      {/* Ganzee Zoon User Profile Modal */}
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
+
+      {/* Mobile-Optimized Bottom App Navigation Bar */}
+      <MobileBottomNav
+        cartCount={cartCount}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
+        user={user}
+      />
+
       <footer className="site-footer">
-        <span>ShopZone<span className="brand-dot">.</span></span>
-        <span>Day 18 E-Commerce with Celery Tasks, Full-Text & Fuzzy Search, PDF Invoices & CSV Import.</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+          <GenZLogo size={20} />
+          <strong>GenZ Zone</strong><span className="brand-dot">✦</span>
+        </span>
+        <span>Trending Ganzee Apparel, Streetwear &amp; Everyday Essentials. Powered by AI Streaming, Semantic Search &amp; Live Tracking.</span>
       </footer>
     </div>
   )

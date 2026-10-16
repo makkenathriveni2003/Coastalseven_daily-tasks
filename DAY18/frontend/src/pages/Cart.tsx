@@ -16,12 +16,13 @@ const CartLine = memo(function CartLine({
   onRemove,
   onSetQuantity,
 }: CartLineProps) {
+  const cleanImg = item.image ? item.image.split("?")[0] : ""
   return (
     <article className="cart-item">
       <img
         className="cart-item-image"
-        src={`${item.image}?auto=format&fit=crop&w=240&q=45`}
-        srcSet={`${item.image}?auto=format&fit=crop&w=120&q=45 120w, ${item.image}?auto=format&fit=crop&w=240&q=45 240w`}
+        src={`${cleanImg}?auto=format&fit=crop&w=240&q=60`}
+        srcSet={`${cleanImg}?auto=format&fit=crop&w=120&q=60 120w, ${cleanImg}?auto=format&fit=crop&w=240&q=60 240w`}
         sizes="(max-width: 640px) 82px, 112px"
         alt=""
         loading="lazy"
